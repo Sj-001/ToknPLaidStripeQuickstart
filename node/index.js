@@ -185,14 +185,30 @@ app.post('/api/set_access_token', function (request, response, next) {
       prettyPrintResponse(tokenResponse);
       ACCESS_TOKEN = tokenResponse.data.access_token;
       ITEM_ID = tokenResponse.data.item_id;
-      if (PLAID_PRODUCTS.includes('transfer')) {
-        TRANSFER_ID = await authorizeAndCreateTransfer(ACCESS_TOKEN);
-      }
-      response.json({
-        access_token: ACCESS_TOKEN,
-        item_id: ITEM_ID,
-        error: null,
-      });
+      client.createStripeToken(
+        ACCESS_TOKEN,
+        ITEM_ID,
+        async function (err, res) {
+          let bankAccountToken = res.stripe_bank_account_token;
+          console.log(bankAccountToken);
+          if (PLAID_PRODUCTS.includes('transfer')) {
+            TRANSFER_ID = await authorizeAndCreateTransfer(ACCESS_TOKEN);
+          }
+          response.json({
+            access_token: ACCESS_TOKEN,
+            item_id: ITEM_ID,
+            stripe_token: bankAccountToken,
+            error: null,
+          });
+        },
+      );
+
+      // response.json({
+      //   access_token: ACCESS_TOKEN,
+      //   item_id: ITEM_ID,
+      //   stripe_token: bankAccountToken,
+      //   error: null,
+      // });
     })
     .catch(next);
 });
